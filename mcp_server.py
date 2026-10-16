@@ -3,45 +3,16 @@ from __future__ import annotations
 import os
 from urllib.parse import urlencode
 
-from mcp.server import FastMCP
+from mcp.server import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
+import uvicorn
 
 from app.calculator import project_avd_growth, project_without_subsidy, years_to_retirement
 from app.models import AvdCalculationRequest
 
+mcp = MCPServer("altersvorsorgedepot-calculator")
 SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/signup")
-MCP_HOST = os.getenv("MCP_HOST", "0.0.0.0")
-MCP_PORT = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
-
-DEFAULT_ALLOWED_HOSTS = [
-    "127.0.0.1:*",
-    "localhost:*",
-    "[::1]:*",
-    "avd-calculator-mcp.onrender.com",
-    "avd-calculator-mcp.onrender.com:*",
-]
-
-env_allowed_hosts = [item.strip() for item in os.getenv("MCP_ALLOWED_HOSTS", "").split(",") if item.strip()]
-allowed_hosts = env_allowed_hosts or DEFAULT_ALLOWED_HOSTS
-allowed_origins = [f"https://{host.split(':')[0]}" for host in allowed_hosts if not host.startswith("127.") and not host.startswith("localhost") and not host.startswith("[::1]")]
-
-mcp = FastMCP(
-    name="altersvorsorgedepot-calculator",
-    host=MCP_HOST,
-    port=MCP_PORT,
-    streamable_http_path="/mcp",
-    transport_security=TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=allowed_hosts,
-        allowed_origins=allowed_origins,
-    ),
-)
-
-
-@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
-async def health_check(_request):
-    return JSONResponse({"status": "ok"})
 
 
 @mcp.tool()
@@ -108,6 +79,35 @@ def create_phone_signup_link(phone_number: str, source: str = "chatgpt-mcp") -> 
 if __name__ == "__main__":
     transport = os.getenv("MCP_TRANSPORT", "stdio").strip()
     if transport == "streamable-http":
-        mcp.run(transport="streamable-http")
+        host = os.getenv("MCP_HOST", "0.0.0.0")
+        port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
+
+        app = mcp.streamable_http_app(
+            streamable_http_path="/mcp",
+            transport_security=TransportSecuritySettings(
+                enable_dns_rebinding_protection=True,
+                allowed_hosts=[
+                    "avd-calculator-mcp.onrender.com",
+                    "avd-calculator-mcp.onrender.com:*",
+                    "localhost",
+                    "localhost:*",
+                    "127.0.0.1",
+                    "127.0.0.1:*",
+                ],
+                allowed_origins=[
+                    "https://avd-calculator-mcp.onrender.com",
+                    "https://chatgpt.com",
+                    "https://chat.openai.com",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
+                ],
+            ),
+        )
+
+        async def health(_request):
+            return JSONResponse({"status": "ok"})
+
+        app.add_route("/health", health, methods=["GET"])
+        uvicorn.run(app, host=host, port=port)
     else:
-        mcp.run(transport="stdio")
+        mcp.run()
