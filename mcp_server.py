@@ -4,6 +4,8 @@ import os
 from urllib.parse import urlencode
 
 from mcp.server import MCPServer
+from starlette.responses import JSONResponse
+import uvicorn
 
 from app.calculator import project_avd_growth, project_without_subsidy, years_to_retirement
 from app.models import AvdCalculationRequest
@@ -78,6 +80,12 @@ if __name__ == "__main__":
     if transport == "streamable-http":
         host = os.getenv("MCP_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
-        mcp.run(transport="streamable-http", host=host, port=port)
+        http_app = mcp.streamable_http_app(streamable_http_path="/mcp")
+
+        async def health(_request):
+            return JSONResponse({"status": "ok"})
+
+        http_app.add_route("/health", health, methods=["GET"])
+        uvicorn.run(http_app, host=host, port=port)
     else:
         mcp.run()
