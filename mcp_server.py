@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Callable
 from urllib.parse import urlencode
 
 from mcp.server import MCPServer
@@ -12,6 +13,23 @@ from app.models import AvdCalculationRequest
 
 mcp = MCPServer("altersvorsorgedepot-calculator")
 SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/signup")
+
+
+class HostHeaderRewriteMiddleware:
+    def __init__(self, app: Callable):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http" and str(scope.get("path", "")).startswith("/mcp"):
+            patched_headers = []
+            for key, value in scope.get("headers", []):
+                if key == b"host":
+                    patched_headers.append((b"host", b"localhost"))
+                else:
+                    patched_headers.append((key, value))
+            scope = {**scope, "headers": patched_headers}
+
+        await self.app(scope, receive, send)
 
 
 @mcp.tool()
@@ -81,11 +99,15 @@ if __name__ == "__main__":
         host = os.getenv("MCP_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
         http_app = mcp.streamable_http_app(streamable_http_path="/mcp")
+        http_app = HostHeaderRewriteMiddleware(http_app)
 
         async def health(_request):
             return JSONResponse({"status": "ok"})
 
-        http_app.add_route("/health", health, methods=["GET"])
-        uvicorn.run(http_app, host=host, port=port)
+        from starlette.applications import Starlette
+        from starlette.routing import Mount, Route
+
+        app = Starlette(routes=[Route("/health", health, methods=["GET"]), Mount("/", app=http_app)])
+        uvicorn.run(app, host=host, port=port)
     else:
         mcp.run()
