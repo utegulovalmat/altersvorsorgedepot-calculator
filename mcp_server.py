@@ -98,7 +98,6 @@ if __name__ == "__main__":
         host = os.getenv("MCP_HOST", "0.0.0.0")
         port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
         http_app = mcp.streamable_http_app(streamable_http_path="/mcp")
-        http_app = HostHeaderRewriteMiddleware(http_app)
 
         async def health(_request):
             return JSONResponse({"status": "ok"})
