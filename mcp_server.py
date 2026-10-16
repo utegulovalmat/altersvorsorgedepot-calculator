@@ -3,32 +3,45 @@ from __future__ import annotations
 import os
 from urllib.parse import urlencode
 
-from mcp.server import MCPServer
+from mcp.server import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
-import uvicorn
 
 from app.calculator import project_avd_growth, project_without_subsidy, years_to_retirement
 from app.models import AvdCalculationRequest
 
-mcp = MCPServer("altersvorsorgedepot-calculator")
 SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/signup")
+MCP_HOST = os.getenv("MCP_HOST", "0.0.0.0")
+MCP_PORT = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
+
+DEFAULT_ALLOWED_HOSTS = [
+    "127.0.0.1:*",
+    "localhost:*",
+    "[::1]:*",
+    "avd-calculator-mcp.onrender.com",
+    "avd-calculator-mcp.onrender.com:*",
+]
+
+env_allowed_hosts = [item.strip() for item in os.getenv("MCP_ALLOWED_HOSTS", "").split(",") if item.strip()]
+allowed_hosts = env_allowed_hosts or DEFAULT_ALLOWED_HOSTS
+allowed_origins = [f"https://{host.split(':')[0]}" for host in allowed_hosts if not host.startswith("127.") and not host.startswith("localhost") and not host.startswith("[::1]")]
+
+mcp = FastMCP(
+    name="altersvorsorgedepot-calculator",
+    host=MCP_HOST,
+    port=MCP_PORT,
+    streamable_http_path="/mcp",
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
+    ),
+)
 
 
-class HostHeaderRewriteMiddleware:
-    def __init__(self, app):
-        self.app = app
-
-    async def __call__(self, scope, receive, send):
-        if scope.get("type") == "http" and str(scope.get("path", "")).startswith("/mcp"):
-            patched_headers = []
-            for key, value in scope.get("headers", []):
-                if key == b"host":
-                    patched_headers.append((b"host", b"localhost"))
-                else:
-                    patched_headers.append((key, value))
-            scope = {**scope, "headers": patched_headers}
-
-        await self.app(scope, receive, send)
+@mcp.custom_route("/health", methods=["GET"], include_in_schema=False)
+async def health_check(_request):
+    return JSONResponse({"status": "ok"})
 
 
 @mcp.tool()
@@ -95,15 +108,6 @@ def create_phone_signup_link(phone_number: str, source: str = "chatgpt-mcp") -> 
 if __name__ == "__main__":
     transport = os.getenv("MCP_TRANSPORT", "stdio").strip()
     if transport == "streamable-http":
-        host = os.getenv("MCP_HOST", "0.0.0.0")
-        port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
-        http_app = mcp.streamable_http_app(streamable_http_path="/mcp")
-
-        async def health(_request):
-            return JSONResponse({"status": "ok"})
-
-        http_app.add_middleware(HostHeaderRewriteMiddleware)
-        http_app.add_route("/health", health, methods=["GET"])
-        uvicorn.run(http_app, host=host, port=port)
+        mcp.run(transport="streamable-http")
     else:
-        mcp.run()
+        mcp.run(transport="stdio")
