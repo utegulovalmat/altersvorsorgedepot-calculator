@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from typing import Callable
 from urllib.parse import urlencode
 
 from mcp.server import MCPServer
@@ -16,7 +15,7 @@ SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/si
 
 
 class HostHeaderRewriteMiddleware:
-    def __init__(self, app: Callable):
+    def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
@@ -104,10 +103,8 @@ if __name__ == "__main__":
         async def health(_request):
             return JSONResponse({"status": "ok"})
 
-        from starlette.applications import Starlette
-        from starlette.routing import Mount, Route
-
-        app = Starlette(routes=[Route("/health", health, methods=["GET"]), Mount("/", app=http_app)])
-        uvicorn.run(app, host=host, port=port)
+        http_app.add_middleware(HostHeaderRewriteMiddleware)
+        http_app.add_route("/health", health, methods=["GET"])
+        uvicorn.run(http_app, host=host, port=port)
     else:
         mcp.run()
