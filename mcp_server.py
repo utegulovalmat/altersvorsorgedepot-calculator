@@ -77,7 +77,7 @@ if __name__ == "__main__":
     transport = os.getenv("MCP_TRANSPORT", "stdio").strip()
     if transport == "streamable-http":
         host = os.getenv("MCP_HOST", "0.0.0.0")
-        port = int(os.getenv("MCP_PORT", "8001"))
+        port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
         mcp.run(transport="streamable-http", host=host, port=port)
     else:
         mcp.run()
