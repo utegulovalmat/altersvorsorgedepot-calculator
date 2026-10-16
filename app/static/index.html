@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Altersvorsorgedepot Rechner</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="hero">
+        <p class="badge">Ab 2027 staatlich gefördert</p>
+        <h1>Altersvorsorgedepot Rechner</h1>
+        <p class="subtitle">
+          Berechne dein mögliches Endkapital inklusive staatlicher Förderung und starte direkt die Kontoeröffnung.
+        </p>
+      </section>
+
+      <section class="card">
+        <form id="calculator-form" class="grid">
+          <label>
+            Aktuelles Alter
+            <input type="number" name="current_age" min="18" max="65" value="30" required />
+          </label>
+
+          <label>
+            Gewünschtes Rentenalter
+            <input type="number" name="retirement_age" min="63" max="70" value="67" required />
+          </label>
+
+          <label>
+            Monatlicher Eigenbeitrag (€)
+            <input type="number" name="monthly_contribution" min="10" max="570" value="150" step="1" required />
+          </label>
+
+          <label>
+            Erwartete Rendite p.a. (%)
+            <input type="number" name="expected_annual_return_pct" min="0" max="20" value="6" step="0.1" required />
+          </label>
+
+          <label>
+            Gesamtkosten p.a. (%)
+            <input type="number" name="annual_cost_pct" min="0" max="3" value="0.8" step="0.1" required />
+          </label>
+
+          <label>
+            Förderfähige Kinder
+            <input type="number" name="eligible_children" min="0" max="10" value="0" required />
+          </label>
+
+          <label class="checkbox">
+            <input type="checkbox" name="include_starter_bonus" checked />
+            Berufseinsteigerbonus berücksichtigen (wenn unter 25)
+          </label>
+
+          <button type="submit" class="primary">Potenzial berechnen</button>
+        </form>
+      </section>
+
+      <section id="results" class="card hidden" aria-live="polite">
+        <h2>Dein Ergebnis</h2>
+        <div class="metrics">
+          <article>
+            <p>Voraussichtliches Endkapital</p>
+            <strong id="metric-end-capital">-</strong>
+          </article>
+          <article>
+            <p>Eigene Einzahlungen</p>
+            <strong id="metric-own-contrib">-</strong>
+          </article>
+          <article>
+            <p>Staatliche Förderung</p>
+            <strong id="metric-subsidy">-</strong>
+          </article>
+          <article>
+            <p>Mehrwert durch Förderung</p>
+            <strong id="metric-uplift">-</strong>
+          </article>
+        </div>
+        <p id="disclaimer" class="disclaimer"></p>
+      </section>
+
+      <section id="signup" class="card hidden">
+        <h2>Jetzt mit Telefonnummer starten</h2>
+        <p>
+          Sichere dir die Altersvorsorgedepot-Eröffnung bei unserer Bank.
+        </p>
+
+        <form id="signup-form" class="signup-grid">
+          <label>
+            Telefonnummer (E.164)
+            <input
+              type="tel"
+              name="phone_number"
+              value="+491701234567"
+              placeholder="+491701234567"
+              required
+            />
+          </label>
+
+          <label class="checkbox">
+            <input type="checkbox" name="consent" required />
+            Ich bin einverstanden, zur Kontoeröffnung kontaktiert zu werden.
+          </label>
+
+          <button type="submit" class="primary">Konto eröffnen</button>
+        </form>
+      </section>
+
+      <section id="error" class="error hidden"></section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,148 @@
+:root {
+  color-scheme: light;
+  --bg: #0d1117;
+  --card: #161b22;
+  --text: #f0f6fc;
+  --muted: #8b949e;
+  --accent: #00d084;
+  --error: #ff7b72;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1f2937 0%, var(--bg) 60%);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.container {
+  max-width: 920px;
+  margin: 2rem auto 4rem;
+  padding: 0 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero h1 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+}
+
+.subtitle {
+  color: var(--muted);
+  max-width: 68ch;
+}
+
+.badge {
+  margin: 0;
+  display: inline-block;
+  border: 1px solid #2d3748;
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  color: #9ae6b4;
+  font-size: 0.85rem;
+}
+
+.card {
+  background: color-mix(in srgb, var(--card) 92%, #000 8%);
+  border: 1px solid #2d3748;
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.9rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+input {
+  border: 1px solid #364152;
+  border-radius: 10px;
+  background: #0f141b;
+  color: var(--text);
+  padding: 0.7rem;
+}
+
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 500;
+}
+
+.checkbox input {
+  accent-color: var(--accent);
+}
+
+.primary {
+  border: 0;
+  background: var(--accent);
+  color: #002814;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+}
+
+.primary:hover {
+  filter: brightness(0.97);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.metrics article {
+  border: 1px solid #2d3748;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+
+.metrics p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.metrics strong {
+  font-size: 1.15rem;
+}
+
+.disclaimer {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.signup-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.hidden {
+  display: none;
+}
