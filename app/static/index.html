@@ -7,85 +7,83 @@
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <main class="container">
-      <section class="hero">
-        <p class="badge">ETF-Altersvorsorge</p>
-        <h1>Altersvorsorgedepot Rechner</h1>
-        <p class="subtitle">
-          Passe die Einstellungen an und vergleiche dein mögliches Endkapital mit und ohne staatliche Förderung.
-        </p>
-      </section>
+    <main class="app-shell">
+      <header class="masthead">
+        <p class="eyebrow">ETF-ALTERSVORSORGE</p>
+        <h1>Was könnte dein Depot erreichen?</h1>
+        <p class="intro">Passe deine Angaben an und sieh, wie sich staatliche Förderung auf dein mögliches Endkapital auswirkt.</p>
+      </header>
 
-      <section class="card">
-        <form id="calculator-form" class="grid">
-          <label>
-            Aktuelles Alter
-            <input type="number" name="current_age" min="18" max="65" value="30" required />
-          </label>
+      <div class="calculator">
+        <section class="inputs-panel" aria-labelledby="inputs-title">
+          <div class="section-heading">
+            <span class="section-number">01 / DEINE ANGABEN</span>
+            <h2 id="inputs-title">Starte mit deinem Plan.</h2>
+          </div>
 
-          <label>
-            Gewünschtes Rentenalter
-            <input type="number" name="retirement_age" min="63" max="70" value="67" required />
-          </label>
+          <form id="calculator-form" class="input-grid">
+            <label>
+              Aktuelles Alter
+              <input type="number" name="current_age" min="18" max="65" value="30" required />
+            </label>
+            <label>
+              Rentenalter
+              <input type="number" name="retirement_age" min="63" max="70" value="67" required />
+            </label>
+            <label class="wide-field">
+              <span>Monatlicher Eigenbeitrag <span class="unit">in €</span></span>
+              <input type="number" name="monthly_contribution" min="10" max="570" value="150" step="1" required />
+            </label>
+            <label>
+              <span>Rendite p.a. <span class="unit">in %</span></span>
+              <input type="number" name="expected_annual_return_pct" min="0" max="20" value="6" step="0.1" required />
+            </label>
+            <label>
+              <span>Gesamtkosten p.a. <span class="unit">in %</span></span>
+              <input type="number" name="annual_cost_pct" min="0" max="3" value="0.8" step="0.1" required />
+            </label>
+            <label class="wide-field">
+              Förderfähige Kinder
+              <input type="number" name="eligible_children" min="0" max="10" value="0" required />
+            </label>
+            <label class="bonus-control wide-field">
+              <input type="checkbox" name="include_starter_bonus" checked />
+              <span>Berufseinsteigerbonus berücksichtigen <small>Einmalig, wenn du unter 25 bist</small></span>
+            </label>
+          </form>
+        </section>
 
-          <label>
-            Monatlicher Eigenbeitrag (€)
-            <input type="number" name="monthly_contribution" min="10" max="570" value="150" step="1" required />
-          </label>
+        <section id="results" class="results-panel" aria-labelledby="results-title" aria-live="polite">
+          <span class="section-number">02 / DEINE PROGNOSE</span>
+          <h2 id="results-title">Mit Förderung kann mehr daraus werden.</h2>
+          <div class="headline-result">
+            <span>Voraussichtliches Endkapital</span>
+            <strong id="metric-end-capital">–</strong>
+          </div>
 
-          <label>
-            Erwartete Rendite p.a. (%)
-            <input type="number" name="expected_annual_return_pct" min="0" max="20" value="6" step="0.1" required />
-          </label>
+          <div class="comparison" aria-label="Vergleich mit und ohne Förderung">
+            <div class="comparison-label"><span>Mit Förderung</span><span id="comparison-with">–</span></div>
+            <div class="comparison-track"><span class="comparison-fill with-subsidy"></span></div>
+            <div class="comparison-label"><span>Ohne Förderung</span><span id="metric-without-subsidy">–</span></div>
+            <div class="comparison-track"><span id="comparison-without-bar" class="comparison-fill without-subsidy"></span></div>
+          </div>
 
-          <label>
-            Gesamtkosten p.a. (%)
-            <input type="number" name="annual_cost_pct" min="0" max="3" value="0.8" step="0.1" required />
-          </label>
+          <dl class="metric-list">
+            <div><dt>Eigene Einzahlungen</dt><dd id="metric-own-contrib">–</dd></div>
+            <div><dt>Staatliche Förderung</dt><dd id="metric-subsidy">–</dd></div>
+            <div><dt>Mehrwert durch Förderung</dt><dd id="metric-uplift">–</dd></div>
+          </dl>
 
-          <label>
-            Förderfähige Kinder
-            <input type="number" name="eligible_children" min="0" max="10" value="0" required />
-          </label>
-
-          <label class="checkbox">
-            <input type="checkbox" name="include_starter_bonus" checked />
-            Berufseinsteigerbonus berücksichtigen (wenn unter 25)
-          </label>
-        </form>
-      </section>
-
-      <section id="results" class="card" aria-live="polite">
-        <h2>Dein Ergebnis</h2>
-        <div class="metrics">
-          <article>
-            <p>Voraussichtliches Endkapital</p>
-            <strong id="metric-end-capital">-</strong>
-          </article>
-          <article>
-            <p>Eigene Einzahlungen</p>
-            <strong id="metric-own-contrib">-</strong>
-          </article>
-          <article>
-            <p>Staatliche Förderung</p>
-            <strong id="metric-subsidy">-</strong>
-          </article>
-          <article>
-            <p>Mehrwert durch Förderung</p>
-            <strong id="metric-uplift">-</strong>
-          </article>
-        </div>
-        <p id="disclaimer" class="disclaimer"></p>
-      </section>
-
-      <section class="card signup">
-        <h2>Bereit für den nächsten Schritt?</h2>
-        <p>Die Registrierung erfolgt direkt bei Trade Republic.</p>
-        <a id="register-link" class="primary" href="https://traderepublic.com/de-de" target="_blank" rel="noopener noreferrer">Bei Trade Republic registrieren ↗</a>
-      </section>
+          <div class="signup">
+            <p>Bereit für den nächsten Schritt?</p>
+            <a id="register-link" class="primary" href="https://traderepublic.com/de-de" target="_blank" rel="noopener noreferrer">Bei Trade Republic registrieren <span aria-hidden="true">↗</span></a>
+            <small>Die Registrierung erfolgt direkt bei Trade Republic.</small>
+          </div>
+        </section>
+      </div>
 
       <section id="error" class="error hidden" role="status"></section>
-      <p class="disclaimer">Unverbindliche Modellrechnung mit vereinfachten Förderannahmen. Keine Zusage zu Förderung oder Rendite; ETF-Kurse können fallen. Steuern und Inflation sind nicht berücksichtigt. Dieser Rechner ist kein Angebot von Trade Republic.</p>
+      <p class="disclaimer">Unverbindliche Modellrechnung mit vereinfachten Förderannahmen ab 2027. Keine Zusage zu Förderung oder Rendite; ETF-Kurse können fallen. Steuern und Inflation sind nicht berücksichtigt. Keine Anlage-, Steuer- oder Rechtsberatung. Dieser Rechner ist kein Angebot von Trade Republic.</p>
     </main>
 
     <script src="/static/app.js"></script>

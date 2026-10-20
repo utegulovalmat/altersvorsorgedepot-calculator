@@ -4,7 +4,9 @@ const metricEndCapital = document.querySelector("#metric-end-capital");
 const metricOwnContrib = document.querySelector("#metric-own-contrib");
 const metricSubsidy = document.querySelector("#metric-subsidy");
 const metricUplift = document.querySelector("#metric-uplift");
-const disclaimer = document.querySelector("#disclaimer");
+const metricWithoutSubsidy = document.querySelector("#metric-without-subsidy");
+const comparisonWith = document.querySelector("#comparison-with");
+const comparisonWithoutBar = document.querySelector("#comparison-without-bar");
 
 const toEuro = (value) =>
   new Intl.NumberFormat("de-DE", {
@@ -58,7 +60,9 @@ const render = (data) => {
   metricOwnContrib.textContent = toEuro(data.total_contributed);
   metricSubsidy.textContent = toEuro(data.total_government_subsidy);
   metricUplift.textContent = toEuro(data.subsidy_value_uplift);
-  disclaimer.textContent = data.disclaimer;
+  metricWithoutSubsidy.textContent = toEuro(data.projected_value_without_subsidy);
+  comparisonWith.textContent = toEuro(data.projected_value);
+  comparisonWithoutBar.style.width = `${Math.min(100, Math.max(0, data.projected_value_without_subsidy / data.projected_value * 100))}%`;
   errorSection.textContent = "";
   errorSection.classList.add("hidden");
 };

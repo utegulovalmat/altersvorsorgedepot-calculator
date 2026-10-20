@@ -76,6 +76,8 @@ class ChatWidgetTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(parser.link["href"], REGISTRATION_URL)
                 self.assertIn("noopener", parser.link["rel"])
                 self.assertIn("tools/call", resource.text)
+                self.assertIn('class="calculator"', resource.text)
+                self.assertIn('id="metric-without-subsidy"', resource.text)
                 self.assertNotIn('src="/static/', resource.text)
                 self.assertNotIn('id="signup-form"', resource.text)
 
