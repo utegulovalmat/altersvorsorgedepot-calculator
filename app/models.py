@@ -36,13 +36,5 @@ class AvdCalculationResponse(BaseModel):
     disclaimer: str
 
 
-class PhoneSignupRequest(BaseModel):
-    phone_number: str = Field(..., description="Phone in E.164 format, e.g. +491701234567")
-    consent: bool = Field(..., description="User confirmed contact consent")
-    source: str = Field("chatgpt", min_length=2, max_length=50)
-
-
-class PhoneSignupResponse(BaseModel):
-    signup_url: str
-    cta: str
-
+class AvdWidgetResponse(AvdCalculationResponse):
+    inputs: AvdCalculationRequest

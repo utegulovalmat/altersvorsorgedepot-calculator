@@ -9,10 +9,10 @@
   <body>
     <main class="container">
       <section class="hero">
-        <p class="badge">Ab 2027 staatlich gefördert</p>
+        <p class="badge">ETF-Altersvorsorge</p>
         <h1>Altersvorsorgedepot Rechner</h1>
         <p class="subtitle">
-          Passe die Beispielwerte an und berechne dein mögliches Endkapital inklusive staatlicher Förderung.
+          Passe die Einstellungen an und vergleiche dein mögliches Endkapital mit und ohne staatliche Förderung.
         </p>
       </section>
 
@@ -52,12 +52,10 @@
             <input type="checkbox" name="include_starter_bonus" checked />
             Berufseinsteigerbonus berücksichtigen (wenn unter 25)
           </label>
-
-          <button type="submit" class="primary">Potenzial berechnen</button>
         </form>
       </section>
 
-      <section id="results" class="card hidden" aria-live="polite">
+      <section id="results" class="card" aria-live="polite">
         <h2>Dein Ergebnis</h2>
         <div class="metrics">
           <article>
@@ -80,14 +78,14 @@
         <p id="disclaimer" class="disclaimer"></p>
       </section>
 
-      <section class="card funding">
-        <h2>Förderung entdecken</h2>
-        <p>Mehr zum Altersvorsorgedepot bei Trade Republic.</p>
-        <a id="funding-link" class="primary" href="https://traderepublic.com/de-de/altersvorsorgedepot" target="_blank" rel="noopener noreferrer">Calculate funding</a>
-        <p class="disclaimer">Öffnet die Website von Trade Republic. Deine Eingaben werden nicht übertragen.</p>
+      <section class="card signup">
+        <h2>Bereit für den nächsten Schritt?</h2>
+        <p>Die Registrierung erfolgt direkt bei Trade Republic.</p>
+        <a id="register-link" class="primary" href="https://traderepublic.com/de-de" target="_blank" rel="noopener noreferrer">Bei Trade Republic registrieren ↗</a>
       </section>
 
-      <section id="error" class="error hidden"></section>
+      <section id="error" class="error hidden" role="status"></section>
+      <p class="disclaimer">Unverbindliche Modellrechnung mit vereinfachten Förderannahmen. Keine Zusage zu Förderung oder Rendite; ETF-Kurse können fallen. Steuern und Inflation sind nicht berücksichtigt. Dieser Rechner ist kein Angebot von Trade Republic.</p>
     </main>
 
     <script src="/static/app.js"></script>

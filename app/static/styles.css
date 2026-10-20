@@ -1,11 +1,11 @@
 :root {
   color-scheme: light;
-  --bg: #0d1117;
-  --card: #161b22;
-  --text: #f0f6fc;
-  --muted: #8b949e;
-  --accent: #00d084;
-  --error: #ff7b72;
+  --bg: #f4f6f2;
+  --card: #ffffff;
+  --text: #18241b;
+  --muted: #56655b;
+  --accent: #19893d;
+  --error: #a23427;
 }
 
 * {
@@ -14,15 +14,15 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #1f2937 0%, var(--bg) 60%);
+  background: var(--bg);
   color: var(--text);
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
 .container {
-  max-width: 920px;
-  margin: 2rem auto 4rem;
-  padding: 0 1rem;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 1rem;
   display: grid;
   gap: 1rem;
 }
@@ -40,16 +40,16 @@ body {
 .badge {
   margin: 0;
   display: inline-block;
-  border: 1px solid #2d3748;
+  border: 1px solid #b7d5b8;
   border-radius: 999px;
   padding: 0.3rem 0.7rem;
-  color: #9ae6b4;
+  color: #19763a;
   font-size: 0.85rem;
 }
 
 .card {
-  background: color-mix(in srgb, var(--card) 92%, #000 8%);
-  border: 1px solid #2d3748;
+  background: var(--card);
+  border: 1px solid #dce7db;
   border-radius: 16px;
   padding: 1rem;
 }
@@ -68,9 +68,9 @@ label {
 }
 
 input {
-  border: 1px solid #364152;
+  border: 1px solid #c5d3c5;
   border-radius: 10px;
-  background: #0f141b;
+  background: #ffffff;
   color: var(--text);
   padding: 0.7rem;
 }
@@ -92,13 +92,17 @@ input:focus-visible {
 }
 
 .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 0;
-  background: var(--accent);
-  color: #002814;
+  background: #173a22;
+  color: #ffffff;
   font-weight: 700;
   border-radius: 10px;
   padding: 0.8rem 1rem;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .primary:hover {
@@ -112,7 +116,7 @@ input:focus-visible {
 }
 
 .metrics article {
-  border: 1px solid #2d3748;
+  border: 1px solid #dce7db;
   border-radius: 12px;
   padding: 0.8rem;
 }
@@ -133,9 +137,16 @@ input:focus-visible {
   font-size: 0.85rem;
 }
 
-.signup-grid {
-  display: grid;
-  gap: 0.85rem;
+.signup h2 {
+  margin-top: 0;
+}
+
+.signup p {
+  color: var(--muted);
+}
+
+.signup .primary {
+  width: 100%;
 }
 
 .error {
@@ -145,20 +156,4 @@ input:focus-visible {
 
 .hidden {
   display: none;
-}
-
-.funding .primary {
-  display: inline-block;
-  text-decoration: none;
-  text-align: center;
-}
-
-.primary:focus-visible {
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
-}
-
-.primary:disabled {
-  opacity: 0.65;
-  cursor: wait;
 }

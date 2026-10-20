@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import os
-import re
 from pathlib import Path
-from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -14,8 +11,6 @@ from app.calculator import project_avd_growth, project_without_subsidy, years_to
 from app.models import (
     AvdCalculationRequest,
     AvdCalculationResponse,
-    PhoneSignupRequest,
-    PhoneSignupResponse,
 )
 
 load_dotenv()
@@ -25,12 +20,11 @@ app = FastAPI(
     version="2.0.0",
     description=(
         "API for a ChatGPT Altersvorsorgedepot assistant with subsidy simulation "
-        "and phone-based account signup CTA."
+        "and a direct Trade Republic registration link."
     ),
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/signup")
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
@@ -67,33 +61,5 @@ def calculate_altersvorsorgedepot(payload: AvdCalculationRequest) -> AvdCalculat
             "Illustrative model based on 2027 Altersvorsorgedepot subsidy assumptions. "
             "This is not investment, tax, or legal advice."
         ),
-    )
-
-
-def _is_e164(phone_number: str) -> bool:
-    return bool(re.fullmatch(r"\+[1-9]\d{7,14}", phone_number))
-
-
-@app.post("/signup/phone", response_model=PhoneSignupResponse)
-def create_phone_signup(payload: PhoneSignupRequest) -> PhoneSignupResponse:
-    phone_number = payload.phone_number.strip()
-    if not payload.consent:
-        raise HTTPException(status_code=400, detail="Explicit consent is required")
-
-    if not _is_e164(phone_number):
-        raise HTTPException(status_code=400, detail="Phone number must be in E.164 format")
-
-    query = urlencode(
-        {
-            "phone": phone_number,
-            "source": payload.source,
-            "entry": "altersvorsorgedepot-calculator",
-        }
-    )
-    signup_url = f"{SIGNUP_BASE_URL}?{query}"
-
-    return PhoneSignupResponse(
-        signup_url=signup_url,
-        cta="Continue with phone signup and open your account",
     )
 

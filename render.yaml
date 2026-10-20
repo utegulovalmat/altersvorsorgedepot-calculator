@@ -5,9 +5,6 @@ services:
     dockerfilePath: ./Dockerfile
     autoDeploy: true
     healthCheckPath: /health
-    envVars:
-      - key: BANK_SIGNUP_BASE_URL
-        sync: false
 
   - type: web
     name: avd-calculator-mcp
@@ -21,5 +18,3 @@ services:
         value: 0.0.0.0
       - key: MCP_PORT
         value: 8001
-      - key: BANK_SIGNUP_BASE_URL
-        sync: false

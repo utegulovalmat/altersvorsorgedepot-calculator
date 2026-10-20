@@ -2,72 +2,99 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlencode
 
-from mcp.server import MCPServer
-from mcp.types import ToolAnnotations
+from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
 import uvicorn
 
 from app.calculator import project_avd_growth, project_without_subsidy, years_to_retirement
-from app.models import AvdCalculationRequest
+from app.models import AvdCalculationRequest, AvdCalculationResponse, AvdWidgetResponse
 
-mcp = MCPServer("altersvorsorgedepot-calculator")
-SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/signup")
-WIDGET_URI = "ui://widget/altersvorsorgedepot-v1.html"
+WIDGET_URI = "ui://avd/calculator-v2.html"
 STATIC_DIR = Path(__file__).resolve().parent / "app" / "static"
-WIDGET_META = {
-    "openai/outputTemplate": WIDGET_URI,
-    "openai/widgetAccessible": True,
-    "openai/toolInvocation/invoking": "Opening retirement calculator",
-    "openai/toolInvocation/invoked": "Retirement calculator ready",
-}
+
+mcp = FastMCP(
+    "altersvorsorgedepot-calculator",
+    instructions=(
+        "Use show_avd_calculator when a user asks about ETF retirement savings, "
+        "Germany's Altersvorsorgedepot, or government subsidy projections. "
+        "The widget lets the user adjust assumptions and has an external Trade Republic registration button."
+    ),
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[
+            "avd-calculator-mcp.onrender.com",
+            "avd-calculator-mcp.onrender.com:*",
+            "localhost",
+            "localhost:*",
+            "127.0.0.1",
+            "127.0.0.1:*",
+        ],
+        allowed_origins=[
+            "https://avd-calculator-mcp.onrender.com",
+            "https://chatgpt.com",
+            "https://chat.openai.com",
+            "http://localhost:*",
+            "http://127.0.0.1:*",
+        ],
+    ),
+)
+
+
+def calculate(payload: AvdCalculationRequest) -> AvdCalculationResponse:
+    horizon_years = years_to_retirement(payload)
+    if horizon_years <= 0:
+        raise ValueError("retirement_age must be greater than current_age")
+
+    projected_value, total_contributed, total_subsidy, estimated_growth, yearly_projection = project_avd_growth(payload)
+    projected_without_subsidy = project_without_subsidy(payload)
+
+    return AvdCalculationResponse(
+        years_to_retirement=horizon_years,
+        total_contributed=total_contributed,
+        total_government_subsidy=total_subsidy,
+        projected_value=projected_value,
+        projected_value_without_subsidy=projected_without_subsidy,
+        subsidy_value_uplift=round(projected_value - projected_without_subsidy, 2),
+        estimated_market_growth=estimated_growth,
+        yearly_projection=yearly_projection,
+        disclaimer=(
+            "Illustrative model based on 2027 Altersvorsorgedepot subsidy assumptions. "
+            "Not investment, tax, or legal advice."
+        ),
+    )
 
 
 @mcp.resource(
     WIDGET_URI,
-    title="Interactive Altersvorsorgedepot calculator",
-    mime_type="text/html+skybridge",
+    name="AVD calculator widget",
+    mime_type="text/html;profile=mcp-app",
     meta={
-        "openai/widgetDescription": "Editable retirement savings calculator with a Calculate funding button linking to Trade Republic.",
-        "openai/widgetPrefersBorder": True,
+        "ui": {
+            "prefersBorder": True,
+            "csp": {"connectDomains": [], "resourceDomains": []},
+        },
         "openai/widgetCSP": {
             "connect_domains": [],
             "resource_domains": [],
             "redirect_domains": ["https://traderepublic.com"],
         },
+        "openai/widgetDescription": "Interactive Altersvorsorgedepot calculator with a Trade Republic registration link.",
     },
 )
-def calculator_widget() -> str:
-    """A self-contained calculator; the chat widget needs no external assets."""
+def avd_calculator_widget() -> str:
     html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    return html.replace(
-        '<link rel="stylesheet" href="/static/styles.css" />',
-        "<style>" + (STATIC_DIR / "styles.css").read_text(encoding="utf-8") + "</style>",
-    ).replace(
-        '<script src="/static/app.js"></script>',
-        "<script>" + (STATIC_DIR / "app.js").read_text(encoding="utf-8") + "</script>",
+    css = (STATIC_DIR / "styles.css").read_text(encoding="utf-8")
+    javascript = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    return html.replace('<link rel="stylesheet" href="/static/styles.css" />', f"<style>{css}</style>").replace(
+        '<script src="/static/app.js"></script>', f"<script>{javascript}</script>"
     )
 
 
 @mcp.tool(
-    title="Open Altersvorsorgedepot calculator",
-    description="Show an interactive Altersvorsorgedepot retirement savings calculator in chat. Use when users ask about Altersvorsorgedepot or want to explore funding. No personal details are needed to open it; users can edit the example assumptions in the widget.",
-    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False),
-    meta=WIDGET_META,
-    structured_output=True,
-)
-def open_altersvorsorgedepot_calculator() -> dict[str, Any]:
-    """Open the calculator with clearly editable example assumptions."""
-    return calculate_altersvorsorgedepot(30, 67, 150)
-
-
-@mcp.tool(
-    title="Calculate Altersvorsorgedepot savings",
-    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False),
-    meta=WIDGET_META,
+    title="Calculate Altersvorsorgedepot",
+    description="Calculate a German Altersvorsorgedepot projection with and without subsidy. Returns data without opening a new widget.",
     structured_output=True,
 )
 def calculate_altersvorsorgedepot(
@@ -78,8 +105,7 @@ def calculate_altersvorsorgedepot(
     annual_cost_pct: float = 0.8,
     eligible_children: int = 0,
     include_starter_bonus: bool = True,
-) -> dict[str, Any]:
-    """Calculate Altersvorsorgedepot potential savings including government subsidy."""
+) -> AvdCalculationResponse:
     payload = AvdCalculationRequest(
         current_age=current_age,
         retirement_age=retirement_age,
@@ -89,80 +115,51 @@ def calculate_altersvorsorgedepot(
         eligible_children=eligible_children,
         include_starter_bonus=include_starter_bonus,
     )
-
-    horizon_years = years_to_retirement(payload)
-    if horizon_years <= 0:
-        raise ValueError("retirement_age must be greater than current_age")
-
-    projected_value, total_contributed, total_subsidy, estimated_growth, yearly_projection = project_avd_growth(payload)
-    projected_without_subsidy = project_without_subsidy(payload)
-
-    return {
-        "inputs": payload.model_dump(),
-        "years_to_retirement": horizon_years,
-        "total_contributed": total_contributed,
-        "total_government_subsidy": total_subsidy,
-        "projected_value": projected_value,
-        "projected_value_without_subsidy": projected_without_subsidy,
-        "subsidy_value_uplift": round(projected_value - projected_without_subsidy, 2),
-        "estimated_market_growth": estimated_growth,
-        "yearly_projection": [item.model_dump() for item in yearly_projection],
-        "disclaimer": (
-            "Illustrative model based on 2027 Altersvorsorgedepot subsidy assumptions. "
-            "Not investment, tax, or legal advice."
-        ),
-    }
+    return calculate(payload)
 
 
-@mcp.tool()
-def create_phone_signup_link(phone_number: str, source: str = "chatgpt-mcp") -> dict:
-    """Build a signup URL for phone-based account opening."""
-    query = urlencode(
-        {
-            "phone": phone_number.strip(),
-            "source": source,
-            "entry": "altersvorsorgedepot-calculator",
-        }
+@mcp.tool(
+    title="Show interactive AVD calculator",
+    description=(
+        "Open the single interactive Altersvorsorgedepot calculator widget for ETF retirement questions. "
+        "Users can change inputs themselves and click through to Trade Republic to register."
+    ),
+    meta={
+        "ui": {"resourceUri": WIDGET_URI},
+        "openai/outputTemplate": WIDGET_URI,
+    },
+    structured_output=True,
+)
+def show_avd_calculator(
+    current_age: int = 30,
+    retirement_age: int = 67,
+    monthly_contribution: float = 150,
+    expected_annual_return_pct: float = 6.0,
+    annual_cost_pct: float = 0.8,
+    eligible_children: int = 0,
+    include_starter_bonus: bool = True,
+) -> AvdWidgetResponse:
+    payload = AvdCalculationRequest(
+        current_age=current_age,
+        retirement_age=retirement_age,
+        monthly_contribution=monthly_contribution,
+        expected_annual_return_pct=expected_annual_return_pct,
+        annual_cost_pct=annual_cost_pct,
+        eligible_children=eligible_children,
+        include_starter_bonus=include_starter_bonus,
     )
-    signup_url = f"{SIGNUP_BASE_URL}?{query}"
-    return {
-        "signup_url": signup_url,
-        "cta": "Continue with phone signup and open your account",
-    }
+    return AvdWidgetResponse(inputs=payload, **calculate(payload).model_dump())
 
 
 if __name__ == "__main__":
     transport = os.getenv("MCP_TRANSPORT", "stdio").strip()
     if transport == "streamable-http":
-        host = os.getenv("MCP_HOST", "0.0.0.0")
-        port = int(os.getenv("MCP_PORT", os.getenv("PORT", "8001")))
-
-        app = mcp.streamable_http_app(
-            streamable_http_path="/mcp",
-            transport_security=TransportSecuritySettings(
-                enable_dns_rebinding_protection=True,
-                allowed_hosts=[
-                    "avd-calculator-mcp.onrender.com",
-                    "avd-calculator-mcp.onrender.com:*",
-                    "localhost",
-                    "localhost:*",
-                    "127.0.0.1",
-                    "127.0.0.1:*",
-                ],
-                allowed_origins=[
-                    "https://avd-calculator-mcp.onrender.com",
-                    "https://chatgpt.com",
-                    "https://chat.openai.com",
-                    "http://localhost:*",
-                    "http://127.0.0.1:*",
-                ],
-            ),
-        )
+        app = mcp.streamable_http_app()
 
         async def health(_request):
             return JSONResponse({"status": "ok"})
 
         app.add_route("/health", health, methods=["GET"])
-        uvicorn.run(app, host=host, port=port)
+        uvicorn.run(app, host=os.getenv("MCP_HOST", "0.0.0.0"), port=int(os.getenv("MCP_PORT", os.getenv("PORT", "8001"))))
     else:
         mcp.run()

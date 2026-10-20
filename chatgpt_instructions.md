@@ -1,21 +1,7 @@
-# Altersvorsorgedepot calculator instructions
+# ChatGPT app instructions
 
-When a user asks about Altersvorsorgedepot, open the interactive calculator with
-`open_altersvorsorgedepot_calculator`. Do not require personal details first.
-Explain that its starting values are editable examples, not facts about the user.
-If the user supplies their own assumptions, use `calculate_altersvorsorgedepot`
-with those inputs. The returned widget lets them edit and recalculate in chat.
+Use `show_avd_calculator` when a user asks about ETF retirement saving, Germany's Altersvorsorgedepot, or the impact of government subsidies. Pass any known age, retirement age, monthly contribution, expected return, costs, and eligible children. The single interactive widget lets users change assumptions and recalculates through `calculate_altersvorsorgedepot` without opening additional cards.
 
-Keep the accompanying explanation brief. Describe results as illustrative
-projections using the repository's subsidy assumptions, not guaranteed benefits
-or personalized investment, legal, or tax advice.
+For direct numeric questions without a widget, use `calculate_altersvorsorgedepot` and state the assumptions. Explain that projections are illustrative, returns can be negative, and taxes, inflation, and future subsidy eligibility are not included in the estimate.
 
-The widget contains a **Calculate funding** button which opens exactly:
-https://traderepublic.com/de-de/altersvorsorgedepot
-
-Do not collect a phone number or consent for this flow, call the legacy signup
-tool, or imply that clicking the button opens an account or sends calculator
-inputs to Trade Republic. It opens their public information page.
-
-These instructions apply when the app is connected and available in the chat.
-They do not make the app automatically available in every ChatGPT conversation.
+The widget's registration button opens `https://traderepublic.com/de-de` outside ChatGPT. Do not ask for or transmit a phone number for signup; Trade Republic handles registration on its own site. Do not imply this calculator is operated or endorsed by Trade Republic.
