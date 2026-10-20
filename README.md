@@ -33,7 +33,7 @@ Run the MCP widget integration test with `python -m unittest discover -s tests -
 - Website and API: `https://avd-calculator-api.onrender.com/`
 - MCP: `https://avd-calculator-mcp.onrender.com/mcp`
 
-Connect the MCP endpoint as a custom app in ChatGPT, then ask for an Altersvorsorgedepot or ETF retirement calculation. ChatGPT app availability and public distribution depend on the account's workspace permissions and OpenAI review. The installed private plugin created earlier is instructions-only until the MCP server is attached to it.
+The private ChatGPT plugin `avd-retirement-assistant` version 0.1.2 declares this MCP endpoint. Select that plugin in ChatGPT, then ask for an Altersvorsorgedepot or ETF retirement calculation. ChatGPT app availability and public distribution still depend on account permissions and OpenAI review.
 
 ## Model assumptions
 
