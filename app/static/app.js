@@ -1,8 +1,6 @@
 const calculatorForm = document.querySelector("#calculator-form");
-const signupForm = document.querySelector("#signup-form");
 
 const resultsSection = document.querySelector("#results");
-const signupSection = document.querySelector("#signup");
 const errorSection = document.querySelector("#error");
 
 const metricEndCapital = document.querySelector("#metric-end-capital");
@@ -43,58 +41,65 @@ calculatorForm.addEventListener("submit", async (event) => {
     include_starter_bonus: Boolean(formData.get("include_starter_bonus")),
   };
 
+  const submitButton = calculatorForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  submitButton.textContent = "Wird berechnet …";
   try {
-    const response = await fetch("/avd/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const detail = await response.json();
-      throw new Error(detail.detail || "Berechnung fehlgeschlagen");
+    let data;
+    if (window.openai?.callTool) {
+      const response = await window.openai.callTool("calculate_altersvorsorgedepot", payload);
+      if (response.isError) throw new Error("Berechnung fehlgeschlagen");
+      data = response.structuredContent;
+      if (!data) throw new Error("Keine Berechnung empfangen");
+    } else {
+      const response = await fetch("/avd/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) {
+        const detail = await response.json();
+        throw new Error(typeof detail.detail === "string" ? detail.detail : "Bitte prüfe deine Eingaben.");
+      }
+      data = await response.json();
     }
-
-    const data = await response.json();
-    metricEndCapital.textContent = toEuro(data.projected_value);
-    metricOwnContrib.textContent = toEuro(data.total_contributed);
-    metricSubsidy.textContent = toEuro(data.total_government_subsidy);
-    metricUplift.textContent = toEuro(data.subsidy_value_uplift);
-    disclaimer.textContent = data.disclaimer;
-
-    resultsSection.classList.remove("hidden");
-    signupSection.classList.remove("hidden");
+    renderResults(data);
   } catch (error) {
     showError(error.message || "Unbekannter Fehler");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Potenzial berechnen";
   }
 });
 
-signupForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  clearError();
+function renderResults(data) {
+  metricEndCapital.textContent = toEuro(data.projected_value);
+  metricOwnContrib.textContent = toEuro(data.total_contributed);
+  metricSubsidy.textContent = toEuro(data.total_government_subsidy);
+  metricUplift.textContent = toEuro(data.subsidy_value_uplift);
+  disclaimer.textContent = data.disclaimer;
+  resultsSection.classList.remove("hidden");
+  window.openai?.notifyIntrinsicHeight?.(document.documentElement.scrollHeight);
+}
 
-  const formData = new FormData(signupForm);
-  const payload = {
-    phone_number: String(formData.get("phone_number") || "").trim(),
-    consent: Boolean(formData.get("consent")),
-    source: "avd-calculator-web",
-  };
+function hydrateWidget() {
+  const data = window.openai?.toolOutput;
+  if (!data?.yearly_projection) return;
+  for (const [name, value] of Object.entries(data.inputs || {})) {
+    const input = calculatorForm.elements.namedItem(name);
+    if (!input) continue;
+    if (input.type === "checkbox") input.checked = Boolean(value);
+    else input.value = value;
+  }
+  renderResults(data);
+}
 
-  try {
-    const response = await fetch("/signup/phone", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+window.addEventListener("openai:set_globals", hydrateWidget);
+hydrateWidget();
 
-    if (!response.ok) {
-      const detail = await response.json();
-      throw new Error(detail.detail || "Signup konnte nicht gestartet werden");
-    }
-
-    const data = await response.json();
-    window.location.href = data.signup_url;
-  } catch (error) {
-    showError(error.message || "Unbekannter Fehler");
+document.querySelector("#funding-link").addEventListener("click", (event) => {
+  if (window.openai?.openExternal) {
+    event.preventDefault();
+    window.openai.openExternal({ href: event.currentTarget.href });
   }
 });

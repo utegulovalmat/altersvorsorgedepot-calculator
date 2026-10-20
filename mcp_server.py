@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
+from typing import Any
 from urllib.parse import urlencode
 
 from mcp.server import MCPServer
+from mcp.types import ToolAnnotations
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
 import uvicorn
@@ -13,9 +16,60 @@ from app.models import AvdCalculationRequest
 
 mcp = MCPServer("altersvorsorgedepot-calculator")
 SIGNUP_BASE_URL = os.getenv("BANK_SIGNUP_BASE_URL", "https://bank.example.com/signup")
+WIDGET_URI = "ui://widget/altersvorsorgedepot-v1.html"
+STATIC_DIR = Path(__file__).resolve().parent / "app" / "static"
+WIDGET_META = {
+    "openai/outputTemplate": WIDGET_URI,
+    "openai/widgetAccessible": True,
+    "openai/toolInvocation/invoking": "Opening retirement calculator",
+    "openai/toolInvocation/invoked": "Retirement calculator ready",
+}
 
 
-@mcp.tool()
+@mcp.resource(
+    WIDGET_URI,
+    title="Interactive Altersvorsorgedepot calculator",
+    mime_type="text/html+skybridge",
+    meta={
+        "openai/widgetDescription": "Editable retirement savings calculator with a Calculate funding button linking to Trade Republic.",
+        "openai/widgetPrefersBorder": True,
+        "openai/widgetCSP": {
+            "connect_domains": [],
+            "resource_domains": [],
+            "redirect_domains": ["https://traderepublic.com"],
+        },
+    },
+)
+def calculator_widget() -> str:
+    """A self-contained calculator; the chat widget needs no external assets."""
+    html = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
+    return html.replace(
+        '<link rel="stylesheet" href="/static/styles.css" />',
+        "<style>" + (STATIC_DIR / "styles.css").read_text(encoding="utf-8") + "</style>",
+    ).replace(
+        '<script src="/static/app.js"></script>',
+        "<script>" + (STATIC_DIR / "app.js").read_text(encoding="utf-8") + "</script>",
+    )
+
+
+@mcp.tool(
+    title="Open Altersvorsorgedepot calculator",
+    description="Show an interactive Altersvorsorgedepot retirement savings calculator in chat. Use when users ask about Altersvorsorgedepot or want to explore funding. No personal details are needed to open it; users can edit the example assumptions in the widget.",
+    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False),
+    meta=WIDGET_META,
+    structured_output=True,
+)
+def open_altersvorsorgedepot_calculator() -> dict[str, Any]:
+    """Open the calculator with clearly editable example assumptions."""
+    return calculate_altersvorsorgedepot(30, 67, 150)
+
+
+@mcp.tool(
+    title="Calculate Altersvorsorgedepot savings",
+    annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False),
+    meta=WIDGET_META,
+    structured_output=True,
+)
 def calculate_altersvorsorgedepot(
     current_age: int,
     retirement_age: int,
@@ -24,7 +78,7 @@ def calculate_altersvorsorgedepot(
     annual_cost_pct: float = 0.8,
     eligible_children: int = 0,
     include_starter_bonus: bool = True,
-) -> dict:
+) -> dict[str, Any]:
     """Calculate Altersvorsorgedepot potential savings including government subsidy."""
     payload = AvdCalculationRequest(
         current_age=current_age,
@@ -44,6 +98,7 @@ def calculate_altersvorsorgedepot(
     projected_without_subsidy = project_without_subsidy(payload)
 
     return {
+        "inputs": payload.model_dump(),
         "years_to_retirement": horizon_years,
         "total_contributed": total_contributed,
         "total_government_subsidy": total_subsidy,

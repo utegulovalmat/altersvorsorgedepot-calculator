@@ -1,11 +1,11 @@
-# Altersvorsorgedepot Calculator + Signup Funnel (ChatGPT + MCP)
+# Altersvorsorgedepot Calculator (ChatGPT + MCP)
 
 This project is an MVP for a German **Altersvorsorgedepot** assistant.
 
 It includes:
 1. a web calculator UI (mechanics inspired by Altersvorsorgedepot calculators)
 2. a FastAPI backend for subsidy + projection math
-3. a phone-signup CTA endpoint for account opening
+3. a **Calculate funding** button linking to Trade Republic (no phone collection in the UI)
 4. an MCP server so ChatGPT can call the calculator as tools
 
 ## What is implemented
@@ -43,7 +43,7 @@ Current model assumptions (2027 law-style mechanics, configurable in code):
 
 Important: this is an illustrative model, not legal/tax advice.
 
-### 3) Phone signup funnel
+### 3) Legacy phone signup API (not used by the calculator UI)
 
 - `POST /signup/phone`
 - Requires E.164 phone format (example: `+491701234567`) and consent
@@ -56,8 +56,8 @@ Important: this is an illustrative model, not legal/tax advice.
 - Focused conversion flow:
   - input assumptions
   - show projected result
-  - ask for phone number
-  - redirect to account opening
+  - edit inputs and recalculate
+  - click **Calculate funding** to visit https://traderepublic.com/de-de/altersvorsorgedepot
 
 ## Local run
 
@@ -91,8 +91,9 @@ MCP endpoint:
 - `http://localhost:8001/mcp`
 
 Exposed MCP tools:
+- `open_altersvorsorgedepot_calculator` (no arguments; opens the editable widget)
 - `calculate_altersvorsorgedepot`
-- `create_phone_signup_link`
+- `create_phone_signup_link` (legacy; not used by the widget)
 
 ## Deploy options
 
@@ -125,21 +126,39 @@ For production, deploy on Render/Fly/Railway and expose HTTPS.
 
 ## Connect to ChatGPT
 
-### As Action API (calculator app behavior)
+The MCP server now provides an Apps SDK HTML widget at
+`ui://widget/altersvorsorgedepot-v1.html`. Both calculator tools reference it via
+`openai/outputTemplate`. The resource inlines its CSS and JavaScript; recalculation
+uses `window.openai.callTool`, and the CTA uses `window.openai.openExternal`.
+The same UI also works as a standalone FastAPI page.
 
-1. Deploy FastAPI publicly via HTTPS
-2. Create custom GPT
-3. Add Action from `https://<your-domain>/openapi.json`
-4. In GPT instructions:
-   - call `/avd/calculate` when users ask for retirement-depot potential
-   - show result with disclaimer
-   - ask for confirmation, then call `/signup/phone`
+1. Deploy the MCP service using `Dockerfile.mcp` or the included Render service.
+   ChatGPT needs a reachable HTTPS MCP endpoint ending in `/mcp`, not localhost.
+   The existing allowed host is `avd-calculator-mcp.onrender.com`; for a different
+   deployment hostname, configure the transport's explicit allowed hosts/origins.
+2. In a ChatGPT account with developer mode/custom app support, create a custom
+   app pointing at that HTTPS `/mcp` endpoint, then connect/select it in a chat.
+   Account availability and UI labels can vary.
+3. Ask: “Show me an Altersvorsorgedepot calculator.” The no-argument
+   `open_altersvorsorgedepot_calculator` tool displays editable example values.
+   Use `chatgpt_instructions.md` if configuring an assistant's instructions.
+4. Change assumptions and press **Potenzial berechnen** to recalculate in chat.
+   **Calculate funding** opens the Trade Republic information page without
+   passing phone numbers or calculator inputs.
 
-### As MCP tools
+An API Action alone does not render this widget. Adding the app does not make
+it automatically appear in all chats for all users; public distribution requires
+the applicable ChatGPT app publication/review process. This repository change
+does not deploy the service or register/publish a ChatGPT app.
 
-1. Deploy `mcp_server.py` with streamable-http
-2. Connect MCP endpoint in your MCP-compatible host
-3. Use tools to calculate subsidy potential and generate signup links
+## Validation
+
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+```
+
+These integration tests start the MCP server over stdio and verify tool discovery,
+widget resource metadata, example hydration, calculator results, and the CTA URL.
 
 ## Compliance notes before going live
 
